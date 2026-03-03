@@ -11,43 +11,45 @@ cifar10_transform = transforms.Compose([
         transforms.Normalize(cifar10_mean, cifar10_std)
 ])
 
-def cifar10_dataloader(split, batch_size, shuffle=False):
-
-    if not split in ('train', 'test'):
-        raise ValueError(f"Invalid CIFAR-10 split {split}")
-
-    dataset = CIFAR10(
-        "./data", 
-        train=split == 'train',
-        download=True, 
-        transform=cifar10_transform
-    )
-
-    return torch.utils.data.DataLoader(
-            dataset, 
-            batch_size=batch_size, 
-            shuffle=shuffle, 
-            num_workers=6
-    )
-
-
-def get_paths(tax):
+def get_tree_paths(tax):
     paths = {}
-    def get_paths_(tax, prefix):
+    def get_tree_paths_(tax, prefix):
         if isinstance(tax, set):
             for item in tax:
                 paths[item] = prefix + [item]
         elif isinstance(tax, dict):
             for k, v in tax.items():
-                get_paths_(v, prefix + [k])
+                get_tree_paths_(v, prefix + [k])
         else:
             raise ValueError
-    get_paths_(tax, [])
+    get_tree_paths_(tax, [])
     return paths
 
-h_class_labels = ['cat', 'deer', 'dog', 'horse', 'bird', 'frog', 'automobile', 'truck', 'airplane', 'ship',
-        'mammal', 'non-mammal', 'vehicle', 'craft', 'living', 'non-living', 'entity']
-h_label_to_idx = {l:i for i,l in enumerate(h_class_labels)}
+flat_labels = [
+        'cat', 
+        'deer', 
+        'dog', 
+        'horse', 
+        'bird', 
+        'frog', 
+        'automobile', 
+        'truck', 
+        'airplane', 
+        'ship'
+    ]
+
+hierarchical_labels = flat_labels + [
+        'mammal', 
+        'non-mammal', 
+        'vehicle', 
+        'craft', 
+        'living', 
+        'non-living', 
+        'entity'
+    ]
+
+flat_label_to_idx = {l:i for i,l in enumerate(flat_labels)}
+hierarchical_label_to_idx = {l:i for i,l in enumerate(hierarchical_labels)}
 
 cifar10_hierarchy = {
     'entity': {
@@ -62,22 +64,43 @@ cifar10_hierarchy = {
     }
 }
 
-class CIFAR10Hierarchical(datasets.CIFAR10):
+class CIFAR10Multilabel(CIFAR10):
+    """
+    Thin wrpper around CIFAR10 so we return a list of labels instead of 
+    a single label (the list is always just one item though).
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        f_to_h = get_paths(cifar10_hierarchy)
-        self.f_to_h_idxs = {
-            self.class_to_idx[f]: list(map(h_label_to_idx.get, hs))
-                for f,hs in f_to_h.items()
+
+    def __getitem__(self, index):
+        img, target = super().__getitem__(index)
+        targets = torch.tensor([target])
+        targets = torch.zeros(len(self.classes)).scatter_(0, targets, 1.)
+        return img, targets
+
+
+class CIFAR10Hierarchical(CIFAR10):
+    """
+    Wrapper around CIFAR10 that returns a list of labels given the "leaf label"
+    of standard CIFAR10. Non-leaf labels are defined by `cifar10_hierachy`.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        flat_to_hierarchical = get_tree_paths(cifar10_hierarchy)
+        self.flat_to_hierarchical_idxs = {
+            self.class_to_idx[f]: list(map(hierarchical_label_to_idx.get, hs))
+                for f,hs in flat_to_hierarchical.items()
         }
         self.flat_classes = self.classes
         self.flat_class_to_idx = self.class_to_idx
-        self.classes = h_class_labels
-        self.class_to_idx = h_label_to_idx
+        self.classes = hierarchical_labels
+        self.class_to_idx = hierarchical_label_to_idx
 
     def __getitem__(self, index):
         img, flat_target = super().__getitem__(index)
-        targets = torch.tensor(self.f_to_h_idxs[flat_target])
+        targets = torch.tensor(self.flat_to_hierarchical_idxs[flat_target])
         targets = torch.zeros(len(self.classes)).scatter_(0, targets, 1.)
         return img, targets
 
@@ -85,15 +108,3 @@ def get_vgg_features(model, x):
     x = model.features(x)
     x = torch.flatten(x, 1)
     return model.classifier[:-3](x)
-
-def retrain_for_multilabel(model, save_path):
-    """
-    Retrain a classification model for multi-label classification;
-    i.e., using pointwise Sigmoid activation rather than Softmax
-    and BCE loss rather than CEL loss.
-
-    This removes the one-class-per-image/entity assumption. Inherent
-    in the CIFAR-10 dataset (but not in e.g., CIFAR-100).
-    """
-
-    pass

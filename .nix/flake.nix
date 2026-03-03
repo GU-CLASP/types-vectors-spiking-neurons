@@ -39,6 +39,7 @@
       tqdm
       matplotlib
       numpy
+      scikit-learn
     ]);
 
     packages = (pkgs: with pkgs; [
