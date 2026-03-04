@@ -1,27 +1,49 @@
 {
   description = "Vector Symolic Architectures / Type Theory with Records";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/25.05";
   };
 
   outputs = { self, nixpkgs }:
 
   let
 
-    supportedSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
-    forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-    pkgs = forAllSystems (system: import nixpkgs { system=system; overlays=overlays; });
-
-    overlays = [
-      (final: prev: {
-        pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [ 
-          (pyFinal: pyPrev: {
-            torchhd = final.python3.pkgs.callPackage ./torchhd.nix { inherit (pyFinal.pkgs); };
-          })
-        ];
-      })
-
+    supportedSystems = [ 
+      "x86_64-linux" 
+      "x86_64-darwin" 
+      "aarch64-linux" 
+      "aarch64-darwin" 
     ];
+
+    forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+
+    pythonOverlay = (final: prev: {
+      pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [ 
+        (pyFinal: pyPrev: {
+          torchhd = final.python3.pkgs.callPackage ./torchhd.nix { inherit (pyFinal.pkgs); };
+        })
+      ];
+    });
+
+    pkgs = forAllSystems (system: import nixpkgs { 
+      system=system; 
+      overlays=[ pythonOverlay ]; 
+    });
+
+    serverPkgs = forAllSystems (system: import nixpkgs { 
+      system=system; 
+      overlays=[ 
+        pythonOverlay 
+        # fix version of nvidia drivers
+        ((import ./nvidia-555.42.02.nix) nixpkgs)  
+      ]; 
+      config={
+        cudaSupport = true;
+        cudaVersion = "12.5";
+        allowUnfree = true;
+        nvidia.acceptLicense = true;
+      };
+    });
 
     tex = pkgs: (pkgs.texlive.combine { 
       inherit (pkgs.texlive) scheme-medium csquotes numprint mathtools expex ;
@@ -54,12 +76,25 @@
   {
 
     devShells = forAllSystems (system: {
-      default = pkgs.${system}.mkShellNoCC {
-        packages =  (packages pkgs.${system});
+
+      default = let pkgs = pkgs.${system}; in pkgs.mkShellNoCC {
+        packages =  (packages pkgs);
         shellHook = ''
           export QUARTO_PYTHON=$(which python3)
         '';
       };
+
+      server = let pkgs = serverPkgs.${system}; in pkgs.mkShellNoCC {
+        packages =  (packages pkgs);
+        shellHook = ''
+          export QUARTO_PYTHON=$(which python3)
+          export CUDA_PATH=${pkgs.cudatoolkit}
+          export EXTRA_LDFLAGS="-L/lib -L${pkgs.linuxPackages.nvidia_x11}/lib"
+          export LD_LIBRARY_PATH="${pkgs.linuxPackages.nvidia_x11}/lib:${pkgs.cudatoolkit}/lib"
+          export HF_HOME=~/.cache/huggingface
+        '';
+      };
+
     });
 
   };

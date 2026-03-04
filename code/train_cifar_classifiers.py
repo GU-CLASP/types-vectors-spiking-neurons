@@ -1,4 +1,5 @@
 from pathlib import Path
+from tqdm import tqdm
 
 import torch
 import torch.nn as nn
@@ -8,13 +9,17 @@ import numpy as np
 import torchvision.transforms as transforms
 from sklearn.metrics import precision_recall_fscore_support
 
-from cifar10 import CIFAR10Hierarchical, CIFAR10Multilabel
+from cifar10 import (
+        CIFAR10Multilabel, 
+        CIFAR10Hierarchical, 
+        cifar10_transform
+    )
 
 def train_log(save_path, content, also_print=True):
     if also_print:
         print(content)
     with open(save_path/'train_log.txt', 'a') as f:
-        f.write(content)
+        f.write(content + '\n')
 
 def sigmoid(x):
         return np.exp(-np.logaddexp(0, -x))
@@ -68,11 +73,14 @@ if __name__ == '__main__':
         case 'hierarchical':
             make_dataset = CIFAR10Hierarchical
             save_dir = args.model_dir/'vgg16_cifar10_hierarchical'
-    
+   
+    save_dir.mkdir(parents=True, exist_ok=True)
+
     train_data = make_dataset(
         root=args.data_dir, 
+        download=True,
         train=True, 
-        transform=transforms.ToTensor()
+        transform=cifar10_transform
     )
 
     train_dataloader = torch.utils.data.DataLoader(
@@ -83,9 +91,10 @@ if __name__ == '__main__':
     )
 
     test_data = make_dataset(
-            root=args.data_dir,  
-            train=False, 
-            transform=transforms.ToTensor()
+        root=args.data_dir,  
+        download=True,
+        train=False, 
+        transform=cifar10_transform
     )
 
     test_dataloader = torch.utils.data.DataLoader(
@@ -107,15 +116,18 @@ if __name__ == '__main__':
     model.classifier[-1] = nn.Linear(512, n_classes, bias=False)
     model = model.to(device)
 
-    optimizer = torch.optim.Adam(model.classifier[-1].parameters())
+    # optimizer = torch.optim.Adam(model.classifier[-1].parameters())
+    optimizer = torch.optim.Adam(model.classifier.parameters())
     loss_fn = nn.BCEWithLogitsLoss().to(device)
 
+    train_log(save_dir, str(args), also_print=False)
+    
     val_f1s = []
     for epoch in range(1, args.n_epochs+1):
         model = model.train()
         epoch_loss = []
-        print(f"Epoch {epochs}.")
-        for batch, (x, y) in enumerate(train_dataloader):
+        print(f"Epoch {epoch}.")
+        for batch, (x, y) in tqdm(enumerate(train_dataloader), total=len(train_dataloader)):
             x = x.to(device)
             y_hat = model(x)
 
