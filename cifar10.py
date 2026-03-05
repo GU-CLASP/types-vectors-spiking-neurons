@@ -103,8 +103,3 @@ class CIFAR10Hierarchical(CIFAR10):
         targets = torch.tensor(self.flat_to_hierarchical_idxs[flat_target])
         targets = torch.zeros(len(self.classes)).scatter_(0, targets, 1.)
         return img, targets
-
-def get_vgg_features(model, x):
-    x = model.features(x)
-    x = torch.flatten(x, 1)
-    return model.classifier[:-3](x)

@@ -24,7 +24,16 @@ def train_log(save_path, content, also_print=True):
 def sigmoid(x):
         return np.exp(-np.logaddexp(0, -x))
 
-def evaluate_multilabel(dataloader, model, threshold=0.5):
+def evaluate(dataloader, model, threshold=0.5, multilabel=False):
+
+    match multilabel:
+        case True:
+            loss_func = F.binary_cross_entropy_with_logits
+            pred_func = lambda x: (sigmoid(x) > threshold).astype(int)
+        case False:
+            loss_func = F.cross_entropy
+            pred_func = lambda x: np.argmax(x, axis=1)
+
     device = next(model.parameters()).device
     model = model.eval()
     test_loss = []
@@ -34,13 +43,14 @@ def evaluate_multilabel(dataloader, model, threshold=0.5):
         y_hat = model(x)
         true.append(y.detach().cpu().numpy())
         pred.append(y_hat.detach().cpu().numpy())
-        loss = F.binary_cross_entropy_with_logits(y_hat, y.to(device))
+        loss = loss_func(y_hat, y.to(device))
         test_loss.append(loss.item())
     mean_loss = sum(test_loss) / len(test_loss)
     print(f"Val loss:{mean_loss:0.4f}")
     true = np.concatenate(true)
-    pred = sigmoid(np.concatenate(pred))
-    results = precision_recall_fscore_support(true, (pred > threshold).astype(int))
+    pred = pred_func(np.concatenate(pred))
+    results = precision_recall_fscore_support(true, pred)
+    print(f"{' ':<10} {'prc':<4} {'rec':<4} {'f1':<4} {'support'}")
     for l, (p, r, f1, s) in zip(dataloader.dataset.classes, zip(*results)):
         print(f"{l:<10} {p:0.2f} {r:0.2f} {f1:0.2f} {s: 6d}")
     macro_p, macro_r, macro_f1, _ = map(np.mean, results)
@@ -140,7 +150,12 @@ if __name__ == '__main__':
         train_log(save_dir, f"Epoch {epoch} train loss:{mean_loss:0.4f}")
 
         torch.save(model.state_dict(), save_dir/'model.pt')
-        val_loss, val_f1 = evaluate_multilabel(test_dataloader, model)
+        val_loss, val_f1 = evaluate(
+                test_dataloader, 
+                model, 
+                multilabel=True,
+                threshold=0.5
+        )
         train_log(save_dir, 
             f"Epoch {epoch} val loss:{val_loss:0.4f}; val f1:{val_f1:0.4f}"
         )

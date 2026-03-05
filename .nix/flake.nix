@@ -25,7 +25,7 @@
       ];
     });
 
-    pkgs = forAllSystems (system: import nixpkgs { 
+    localPkgs = forAllSystems (system: import nixpkgs { 
       system=system; 
       overlays=[ pythonOverlay ]; 
     });
@@ -77,7 +77,7 @@
 
     devShells = forAllSystems (system: {
 
-      default = let pkgs = pkgs.${system}; in pkgs.mkShellNoCC {
+      default = let pkgs = localPkgs.${system}; in pkgs.mkShellNoCC {
         packages =  (packages pkgs);
         shellHook = ''
           export QUARTO_PYTHON=$(which python3)
