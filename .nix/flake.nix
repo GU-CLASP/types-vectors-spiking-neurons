@@ -46,7 +46,7 @@
     });
 
     tex = pkgs: (pkgs.texlive.combine { 
-      inherit (pkgs.texlive) scheme-medium csquotes numprint mathtools expex ;
+      inherit (pkgs.texlive) scheme-medium csquotes numprint mathtools expex minimalist listings;
     });
 
     pythonPackages = (ps: with ps; [
@@ -70,6 +70,7 @@
       typst
       quarto
       bash
+      entr
     ]);
 
   in
