@@ -1,0 +1,100 @@
+
+\documentclass{minimal}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\input{json_listing.tex}
+
+\begin{document}
+\includegraphics[width=0.5\textwidth]{data/CLEVR_v1.0/images/val/CLEVR_val_000115.png}
+\\
+What is the color of the metal object to the left of the tiny yellow cylinder?
+
+\begin{lstlisting}[language=json]
+{'directions': {'above': [0.000, 0.000, 1.000],
+                'behind': [-0.754, 0.656, 0.000],
+                'below': [-0.000, -0.000, -1.000],
+                'front': [0.754, -0.656, -0.000],
+                'left': [-0.656, -0.754, 0.000],
+                'right': [0.656, 0.754, -0.000]},
+ 'image_filename': 'CLEVR_val_000115.png',
+ 'image_index': 115,
+ 'objects': [{'3d_coords': [-2.447, -1.289, 0.700],
+              'color': 'red',
+              'material': 'rubber',
+              'pixel_coords': [131, 112, 12.298],
+              'rotation': 118.645,
+              'shape': 'cylinder',
+              'size': 'large'},
+             {'3d_coords': [1.354, -0.720, 0.350],
+              'color': 'yellow',
+              'material': 'metal',
+              'pixel_coords': [256, 182, 10.232],
+              'rotation': 55.833,
+              'shape': 'cylinder',
+              'size': 'small'},
+             {'3d_coords': [-0.976, -1.563, 0.350],
+              'color': 'red',
+              'material': 'metal',
+              'pixel_coords': [155, 151, 11.328],
+              'rotation': 31.723,
+              'shape': 'cylinder',
+              'size': 'small'},
+             {'3d_coords': [2.899, -0.578, 0.700],
+              'color': 'red',
+              'material': 'rubber',
+              'pixel_coords': [321, 198, 9.103],
+              'rotation': 45.535,
+              'shape': 'cylinder',
+              'size': 'large'}],
+ 'relationships': {'behind': [[], [0, 2], [0], [0, 1, 2]],
+                   'front': [[1, 2, 3], [3], [1, 3], []],
+                   'left': [[], [0, 2], [0], [0, 1, 2]],
+                   'right': [[1, 2, 3], [3], [1, 3], []]},
+ 'split': 'val'}
+\end{lstlisting}
+
+\begin{lstlisting}[language=json]
+{'answer': 'red',
+ 'image_filename': 'CLEVR_val_000115.png',
+ 'image_index': 115,
+ 'program': [{'function': 'scene', 'inputs': [], 'value_inputs': []},
+             {'function': 'filter_size',
+              'inputs': [0],
+              'value_inputs': ['small']},
+             {'function': 'filter_color',
+              'inputs': [1],
+              'value_inputs': ['yellow']},
+             {'function': 'filter_shape',
+              'inputs': [2],
+              'value_inputs': ['cylinder']},
+             {'function': 'unique', 'inputs': [3], 'value_inputs': []},
+             {'function': 'relate', 'inputs': [4], 'value_inputs': ['left']},
+             {'function': 'filter_material',
+              'inputs': [5],
+              'value_inputs': ['metal']},
+             {'function': 'unique', 'inputs': [6], 'value_inputs': []},
+             {'function': 'query_color', 'inputs': [7], 'value_inputs': []}],
+ 'question': 'What is the color of the metal object to the left of the tiny '
+             'yellow cylinder?',
+ 'question_family_index': 75,
+ 'question_index': 1156,
+ 'split': 'val'}
+\end{lstlisting}
+
+$$
+\left[\begin{array}{lcl}
+\text{x} &:& \textit{Ind}\\
+\text{c}_{\text{boy}} &:& \langle \lambda v:\textit{Ind}\ .\ \text{boy}(v), \langle \text{x}\rangle\rangle\\
+\text{y} &:& \textit{Ind}\\
+\text{c}_{\text{dog}} &:& \langle \lambda v:\textit{Ind}\ .\ \text{dog}(v), \langle \text{y}\rangle\rangle\\
+\text{e} &:& \langle \lambda v_{1}:\textit{Ind}\ .\ \lambda v_{2}:\textit{Ind}\ .\ \text{hug}(v_{1}, v_{2}), \langle \text{x}, \text{y}\rangle\rangle
+\end{array}\right]
+$$
+
+
+
+\end{document}
+
