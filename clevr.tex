@@ -84,16 +84,111 @@ What is the color of the metal object to the left of the tiny yellow cylinder?
  'split': 'val'}
 \end{lstlisting}
 
+Type associated with question:
+
 $$
 \left[\begin{array}{lcl}
 \text{x} &:& \textit{Ind}\\
-\text{c}_{\text{boy}} &:& \langle \lambda v:\textit{Ind}\ .\ \text{boy}(v), \langle \text{x}\rangle\rangle\\
+\text{x}_{\text{size}} &:& \langle \lambda v:\textit{Ind}\ .\ \text{small}(v), \langle \text{x}\rangle\rangle\\
+\text{x}_{\text{color}} &:& \langle \lambda v:\textit{Ind}\ .\ \text{yellow}(v), \langle \text{x}\rangle\rangle\\
+\text{x}_{\text{shape}} &:& \langle \lambda v:\textit{Ind}\ .\ \text{cylinder}(v), \langle \text{x}\rangle\rangle\\
 \text{y} &:& \textit{Ind}\\
-\text{c}_{\text{dog}} &:& \langle \lambda v:\textit{Ind}\ .\ \text{dog}(v), \langle \text{y}\rangle\rangle\\
-\text{e} &:& \langle \lambda v_{1}:\textit{Ind}\ .\ \lambda v_{2}:\textit{Ind}\ .\ \text{hug}(v_{1}, v_{2}), \langle \text{x}, \text{y}\rangle\rangle
+\text{y}_{\text{material}} &:& \langle \lambda v:\textit{Ind}\ .\ \text{metal}(v), \langle \text{y}\rangle\rangle\\
+\text{c} &:& \langle \lambda v_{1}:\textit{Ind}\ .\ \lambda v_{2}:\textit{Ind}\ .\ \text{left}(v_{1}, v_{2}), \langle \text{x}, \text{y}\rangle\rangle
 \end{array}\right]
 $$
 
+Witness record (extracted from scene graph):
+
+$$
+\left[\begin{array}{rcl}
+\text{x} &=& \text{115-}_{\text{1}}\\
+\text{x}_{\text{size}} &=& \langle \left\{\begin{array}{rcl}
+\text{color} &=& \text{yellow}\\
+\text{size} &=& \text{small}\\
+\text{rotation} &=& 55.83304526084006\\
+\text{shape} &=& \text{cylinder}\\
+\text{3d}_{\text{coords}} &=& [ 1.3542927503585815, -0.7202857136726379, 0.3499999940395355]\\
+\text{material} &=& \text{metal}\\
+\text{pixel}_{\text{coords}} &=& [ 256, 182, 10.231954574584961]\\
+\text{id} &=& \text{115-}_{\text{1}}\\
+\text{right} &=& [ \text{115-}_{\text{3}}]\\
+\text{behind} &=& [ \text{115-}_{\text{0}}, \text{115-}_{\text{2}}]\\
+\text{front} &=& [ \text{115-}_{\text{3}}]\\
+\text{left} &=& [ \text{115-}_{\text{0}}, \text{115-}_{\text{2}}]
+\end{array}\right\}\rangle\\
+\text{x}_{\text{color}} &=& \langle \left\{\begin{array}{rcl}
+\text{color} &=& \text{yellow}\\
+\text{size} &=& \text{small}\\
+\text{rotation} &=& 55.83304526084006\\
+\text{shape} &=& \text{cylinder}\\
+\text{3d}_{\text{coords}} &=& [ 1.3542927503585815, -0.7202857136726379, 0.3499999940395355]\\
+\text{material} &=& \text{metal}\\
+\text{pixel}_{\text{coords}} &=& [ 256, 182, 10.231954574584961]\\
+\text{id} &=& \text{115-}_{\text{1}}\\
+\text{right} &=& [ \text{115-}_{\text{3}}]\\
+\text{behind} &=& [ \text{115-}_{\text{0}}, \text{115-}_{\text{2}}]\\
+\text{front} &=& [ \text{115-}_{\text{3}}]\\
+\text{left} &=& [ \text{115-}_{\text{0}}, \text{115-}_{\text{2}}]
+\end{array}\right\}\rangle\\
+\text{x}_{\text{shape}} &=& \langle \left\{\begin{array}{rcl}
+\text{color} &=& \text{yellow}\\
+\text{size} &=& \text{small}\\
+\text{rotation} &=& 55.83304526084006\\
+\text{shape} &=& \text{cylinder}\\
+\text{3d}_{\text{coords}} &=& [ 1.3542927503585815, -0.7202857136726379, 0.3499999940395355]\\
+\text{material} &=& \text{metal}\\
+\text{pixel}_{\text{coords}} &=& [ 256, 182, 10.231954574584961]\\
+\text{id} &=& \text{115-}_{\text{1}}\\
+\text{right} &=& [ \text{115-}_{\text{3}}]\\
+\text{behind} &=& [ \text{115-}_{\text{0}}, \text{115-}_{\text{2}}]\\
+\text{front} &=& [ \text{115-}_{\text{3}}]\\
+\text{left} &=& [ \text{115-}_{\text{0}}, \text{115-}_{\text{2}}]
+\end{array}\right\}\rangle\\
+\text{y} &=& \text{115-}_{\text{2}}\\
+\text{y}_{\text{material}} &=& \langle \left\{\begin{array}{rcl}
+\text{color} &=& \text{red}\\
+\text{size} &=& \text{small}\\
+\text{rotation} &=& 31.72266626640679\\
+\text{shape} &=& \text{cylinder}\\
+\text{3d}_{\text{coords}} &=& [ -0.9759458899497986, -1.5626593828201294, 0.3499999940395355]\\
+\text{material} &=& \text{metal}\\
+\text{pixel}_{\text{coords}} &=& [ 155, 151, 11.327897071838379]\\
+\text{id} &=& \text{115-}_{\text{2}}\\
+\text{right} &=& [ \text{115-}_{\text{1}}, \text{115-}_{\text{3}}]\\
+\text{behind} &=& [ \text{115-}_{\text{0}}]\\
+\text{front} &=& [ \text{115-}_{\text{1}}, \text{115-}_{\text{3}}]\\
+\text{left} &=& [ \text{115-}_{\text{0}}]
+\end{array}\right\}\rangle\\
+\text{c} &=& \langle \left\{\begin{array}{rcl}
+\text{color} &=& \text{yellow}\\
+\text{size} &=& \text{small}\\
+\text{rotation} &=& 55.83304526084006\\
+\text{shape} &=& \text{cylinder}\\
+\text{3d}_{\text{coords}} &=& [ 1.3542927503585815, -0.7202857136726379, 0.3499999940395355]\\
+\text{material} &=& \text{metal}\\
+\text{pixel}_{\text{coords}} &=& [ 256, 182, 10.231954574584961]\\
+\text{id} &=& \text{115-}_{\text{1}}\\
+\text{right} &=& [ \text{115-}_{\text{3}}]\\
+\text{behind} &=& [ \text{115-}_{\text{0}}, \text{115-}_{\text{2}}]\\
+\text{front} &=& [ \text{115-}_{\text{3}}]\\
+\text{left} &=& [ \text{115-}_{\text{0}}, \text{115-}_{\text{2}}]
+\end{array}\right\}, \left\{\begin{array}{rcl}
+\text{color} &=& \text{red}\\
+\text{size} &=& \text{small}\\
+\text{rotation} &=& 31.72266626640679\\
+\text{shape} &=& \text{cylinder}\\
+\text{3d}_{\text{coords}} &=& [ -0.9759458899497986, -1.5626593828201294, 0.3499999940395355]\\
+\text{material} &=& \text{metal}\\
+\text{pixel}_{\text{coords}} &=& [ 155, 151, 11.327897071838379]\\
+\text{id} &=& \text{115-}_{\text{2}}\\
+\text{right} &=& [ \text{115-}_{\text{1}}, \text{115-}_{\text{3}}]\\
+\text{behind} &=& [ \text{115-}_{\text{0}}]\\
+\text{front} &=& [ \text{115-}_{\text{1}}, \text{115-}_{\text{3}}]\\
+\text{left} &=& [ \text{115-}_{\text{0}}]
+\end{array}\right\}\rangle
+\end{array}\right]
+$$
 
 
 \end{document}
