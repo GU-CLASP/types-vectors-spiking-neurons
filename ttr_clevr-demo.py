@@ -1,8 +1,8 @@
+from pyttr.ttrtypes import PType, Fun, RecType
+from pyttr.utils import show, show_latex, print_latex
 from ttr_clevr import preds, Ind, \
                       scene_graph_to_h_data_db, \
                       find_witness_takes
-from pyttr.ttrtypes import PType, Fun, RecType
-from pyttr.utils import show, show_latex, print_latex
 
 import json
 import pprint
