@@ -107,6 +107,13 @@ def h_data_to_sit_take(sit_type, label_map, h_data_db):
 
 
 def find_witness_takes(sit_type, h_data_db, label_map={}):
+    """
+    Given a visual scene (in the form of `h_data_db`), find takes on
+    the scene (list of Rec), if any, that satisfy a given `sit_type`.
+
+    `label_map` is a (possibly empty) partial map from `sit_type` labels 
+    to `h_data_db` ids. Any resulting witness takes will repsect `label_map`.
+    """
 
     type_labels = get_ind_labels(sit_type)
     assigned_labels = set(label_map.keys())
