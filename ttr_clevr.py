@@ -119,16 +119,16 @@ def find_witness_takes(sit_type, h_data_db, label_map={}):
     assigned_labels = set(label_map.keys())
     unassigned_labels = {l for l in type_labels if not l in assigned_labels}
 
-    # stopping condition: we have no more labels to assign.
-    # if the (complete) record is proof of the type, yield it.
+    # stopping condition: no more labels to assign
+    #   if the (complete) record is proof of the type, yield it.
     if not unassigned_labels:
         sit_take = h_data_to_sit_take(sit_type, label_map, h_data_db)
         if sit_type.query(sit_take):
             yield sit_take
 
-    # recursive condition: the lable_map in incomplete
-    # check if the sit_take is consistent with the type restricted to
-    # the incomplete label map. if so we want to try extensions of it.
+    # recursive condition: the lable_map is incomplete
+    #   check if the sit_take is consistent with the type (restricted to
+    #   the incomplete label map). if so we want to try extensions of it.
     else:
         sit_type_restr = get_restricted_type(assigned_labels, sit_type)
         sit_take = h_data_to_sit_take(sit_type_restr, label_map, h_data_db)
