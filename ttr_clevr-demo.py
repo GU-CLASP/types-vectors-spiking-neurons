@@ -3,6 +3,8 @@ from pyttr.utils import show, show_latex, print_latex
 from ttr_clevr import preds, Ind, \
                       scene_graph_to_h_data_db, \
                       find_witness_takes
+from util import load_clevr
+from pathlib import Path
 
 import json
 import pprint
@@ -22,14 +24,7 @@ class FormatPrinter(pprint.PrettyPrinter):
 fprinter = FormatPrinter({float: "%.3f"})
 
 clevr_dir = Path("./data/CLEVR_v1.0")
-questions_path = clevr_dir/"questions"/"CLEVR_val_questions.json"
-scenes_path = clevr_dir/"scenes"/"CLEVR_val_scenes.json"
-
-with questions_path.open() as f:
-    questions = json.load(f)['questions']
-
-with scenes_path.open() as f:
-    scenes = json.load(f)['scenes']
+questions, scenes = load_clevr(clevr_dir, split='val')
 
 def to_image_path(r):
     return clevr_dir/'images'/r['split']/r['image_filename']
@@ -46,7 +41,7 @@ T = RecType({
     'y': Ind,
     'y_material': (Fun('v', Ind, PType(preds['metal'], ['v'])), ['y']),
     'c':(Fun('v1',Ind, Fun('v2',Ind, PType(preds['left'], ['v1','v2']))), ['x','y'])
-})
+    })
 
 h_data_db = scene_graph_to_h_data_db(g)
 r = list(find_witness_takes(T, h_data_db, label_map={}))[0]

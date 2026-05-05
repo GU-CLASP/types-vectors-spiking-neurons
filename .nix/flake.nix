@@ -46,7 +46,7 @@
     });
 
     tex = pkgs: (pkgs.texlive.combine { 
-      inherit (pkgs.texlive) scheme-medium csquotes numprint mathtools expex minimalist listings;
+      inherit (pkgs.texlive) scheme-medium csquotes numprint mathtools expex minimalist listings tree-dvips gb4e was pbox relsize algpseudocodex algorithmicx inconsolata upquote;
     });
 
     pythonPackages = (ps: with ps; [
