@@ -1,7 +1,7 @@
 {
   description = "Vector Symolic Architectures / Type Theory with Records";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
   outputs = { self, nixpkgs }:
@@ -45,10 +45,6 @@
       };
     });
 
-    tex = pkgs: (pkgs.texlive.combine { 
-      inherit (pkgs.texlive) scheme-medium csquotes numprint mathtools expex minimalist listings tree-dvips gb4e was pbox relsize algpseudocodex algorithmicx inconsolata upquote;
-    });
-
     pythonPackages = (ps: with ps; [
       jupyter
       ipython
@@ -64,13 +60,39 @@
       scikit-learn
     ]);
 
+    texPackages = (ps: with ps; [
+      latexmk
+      cm-super
+      biblatex
+      csquotes 
+      numprint 
+      mathtools 
+      expex 
+      minimalist 
+      listings 
+      tree-dvips 
+      gb4e 
+      was 
+      pbox 
+      relsize 
+      algpseudocodex 
+      algorithmicx 
+      inconsolata 
+      upquote 
+      adjustbox 
+      covington 
+      varwidth
+    ]);
+
     packages = (pkgs: with pkgs; [
       (python3.withPackages pythonPackages)
-      (tex pkgs)
+      (texliveSmall.withPackages texPackages)
+      biber
       typst
       quarto
       bash
       entr
+      codex
     ]);
 
   in

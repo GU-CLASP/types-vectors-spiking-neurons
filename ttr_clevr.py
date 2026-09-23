@@ -176,7 +176,7 @@ def h_data_to_sit_take(h_scene, label_map):
                 res.addfield(f'{l_}{l}_{rel}', (h_hash_, h_hash))
     return res
 
-def find_witness_takes(T, h_scene, label_map={}):
+def build_witness_takes(T, h_scene, label_map={}):
     """
     Given a visual scene (in the form of `h_scene`), find takes on
     the scene (list of Rec), if any, that satisfy a given a sit type `T`.
@@ -186,14 +186,13 @@ def find_witness_takes(T, h_scene, label_map={}):
     """
 
     type_labels = get_ind_labels(T)
-    mapped_labels = set(label_map.keys())
-    unmapped_labels = {l for l in type_labels if not l in mapped_labels}
+    free_type_labels = {l for l in type_labels if not l in label_map.keys()}
     aux_labels = [f'v{i}' for i in range(1,10)]
     assert not any([v in type_labels for v in aux_labels])
 
     # stopping condition: no more labels to assign
     #   if the (complete) record is proof of the type, yield it.
-    if not unmapped_labels:
+    if not free_type_labels:
         unmapped_ids = [h_id for h_id in h_scene 
                          if not h_id in label_map.values()]
         label_map |= {l: h_id for h_id, l in zip(unmapped_ids, aux_labels)}
@@ -205,12 +204,12 @@ def find_witness_takes(T, h_scene, label_map={}):
     #   check if the s is consistent with the type (restricted to
     #   the incomplete label map). if so we want to try extensions of it.
     else:
-        T_restr = get_restricted_type(mapped_labels, T)
+        T_restr = get_restricted_type(label_map.keys(), T)
         s = h_data_to_sit_take(h_scene, label_map)
         if T_restr.query(s):
-            l = unmapped_labels.pop()
+            l = free_type_labels.pop()
             for h_id in h_scene:
                 label_map_extended = label_map | {l: h_id}
-                yield from find_witness_takes(
+                yield from build_witness_takes(
                         T, h_scene, label_map_extended
                     )
