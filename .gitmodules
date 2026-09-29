@@ -1,3 +1,0 @@
-[submodule "code/pyttr"]
-	path = code/pyttr
-	url = git@github.com:robincooper/pyttr.git

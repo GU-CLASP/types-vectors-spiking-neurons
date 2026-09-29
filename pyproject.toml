@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spinls"
+version = "0.1.0"
+description = "SPINLS experiments in perceptually grounded Type Theory with Records"
+requires-python = ">=3.11"
+dependencies = ["pyttr2"]
+
+[project.optional-dependencies]
+vision = ["torch>=2", "torchvision", "pillow"]
+notebooks = ["jupyterlab", "nbformat", "torch>=2", "torchvision", "torch-hd>=5.8", "scikit-learn", "pillow"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
