@@ -16,6 +16,7 @@ types-vectors-spiking-neurons/
     ├── src/spinls/         # Grounding, perception, and CIFAR helpers
     ├── examples/           # Runnable ground-truth and perception demos
     ├── notebooks/         # Retained HD-Glue experiment
+    ├── scripts/           # Reproducible GPU feature/training pipeline
     ├── tests/             # Offline regression and integration checks
     ├── docs/              # Refactor inventory and WP1 boundaries
     ├── data/              # Ignored local dataset links (not downloaded)
@@ -52,6 +53,10 @@ Restart notebook kernels after changing imported PyTTR code. Commits remain
 separate in the two repositories; neither approach pins a cross-repository
 revision. Record both commit IDs when reporting an experiment.
 
+The Nix flake is under `.nix/`. Enter the CUDA-enabled shell on the GPU server
+with `nix develop ./.nix#server`; its shell hook configures the live project and
+sibling PyTTR import paths plus the ignored Torch checkpoint cache.
+
 The old `.gitmodules` entry pointed to an absent `code/pyttr` submodule and has
 been archived. No symlink or submodule is required. The existing `.nix/`
 environment is retained; it was not rebuilt as part of this refactor.
@@ -86,8 +91,10 @@ make web-demo
 
 Then open `http://127.0.0.1:8000`. The page shows a random CLEVR scene,
 optional ground-truth object-ID overlays, its associated questions, the
-compiled TTR question, and—on request—the answer and situation take. Enter a
-CLEVR image index in the header to open a specific scene. Use
+compiled TTR question, and—on request—the answer and situation take. The take
+includes the fields required by the question while abbreviating raw scene-graph
+evidence as `#json(object-id)`; classifiers still receive the complete H-data
+objects. Enter a CLEVR image index in the header to open a specific scene. Use
 `python examples/clevr_web.py --help` to select another dataset split, host,
 or port. LaTeX is rendered by MathJax loaded from its public CDN.
 
@@ -123,13 +130,64 @@ To exercise the real Faster R-CNN architecture without downloading weights:
 
 ```sh
 PYTHONPATH=src:../pyttr2/src OMP_NUM_THREADS=2 python examples/clevr_perception.py \
-  --architecture-smoke
+  --oracle-feature-smoke
 ```
 
-This uses random weights only to verify plumbing. `FasterRCNNDetector` accepts
-an injected detector plus a crop-to-attribute-distributions callback. A trained
-CLEVR detector/attribute classifier is still needed for real image matching.
-See [WP1 boundaries](docs/wp1.md).
+This uses random weights only to verify that an oracle box passes through the
+Faster R-CNN transform, backbone, RoI pool, and box head, producing a cached
+1024-dimensional vector with the default architecture. `FeatureObject` stores
+that vector as immutable H-data. `model_from_feature_objects` applies an
+injected vector-to-attribute classifier lazily and caches its distributions per
+object; `build_factorized_attribute_heads` provides trainable Torch linear
+heads for color, shape, size, and material. Approximate scene-derived regions
+are available as described below; trained weights are still needed for
+meaningful image matching. The older
+`--architecture-smoke` detection path remains available. See
+[WP1 boundaries](docs/wp1.md).
+
+Standard CLEVR scene annotations can also be converted to approximate regions
+without re-rendering. The port records its upstream projection-heuristic source,
+fixes the coordinate rotation, clips to the image, and supports resized images.
+Inspect a scene before exporting features:
+
+```sh
+PYTHONPATH=src:../pyttr2/src python examples/clevr_boxes.py \
+  --data-dir data/CLEVR_v1.0 --split val --scene 0 \
+  --output /tmp/clevr-val-0-boxes.png
+```
+
+These are identity-aligned pseudo-oracle regions, not mask-tight ground truth.
+They are intended first for RoI feature extraction, not detector localization
+training.
+
+## GPU feature cache and attribute heads
+
+`examples/cache_clevr_features.py` exports identity-aligned box-head vectors to
+atomic, resumable tensor shards. Manifests record the attribute vocabulary,
+feature dimension, architecture, pretrained weights, and Torch versions.
+Features use float16 on disk; training converts them to float32. Train and
+validation caches occupy roughly 1.2 GB with 1024-dimensional features.
+
+On a GPU server, keep `pyttr2` adjacent to this repository, make CLEVR available
+at any local path, and run:
+
+```sh
+nix develop ./.nix#server
+export CLEVR_DIR=/path/to/CLEVR_v1.0
+make gpu-pipeline
+```
+
+The launcher uses COCO-pretrained ResNet50-FPN features, then trains independent
+linear heads for color, size, material, and shape. It reports validation
+accuracy for each family and atomically saves the best checkpoint under
+`artifacts/clevr-resnet50-fpn/`. Generated features, downloaded weights, and
+checkpoints are ignored by Git. Override `FEATURE_BATCH_SIZE` if the default of
+8 does not fit GPU memory; rerunning the command skips completed shards.
+
+For a short server benchmark before the full export, invoke the cache CLI with
+`--limit-scenes 100`. The public CLEVR test split has no scene annotations, so
+the pseudo-oracle pipeline exports train and validation only; test images become
+usable after replacing oracle regions with learned proposals.
 
 ## HD-Glue notebook
 

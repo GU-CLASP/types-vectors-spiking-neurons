@@ -5,6 +5,7 @@ as well as its external classifier. Create a new model when scene evidence or
 classifiers change: PyTTR caches successful judgements.
 """
 
+from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass
 from itertools import count
@@ -277,7 +278,7 @@ class _CountQuery:
 class CLEVRModel:
     """One scene snapshot, isolated PyTTR model, and external Boolean classifiers.
 
-    Classifiers map predicate names to callables on tuples of object dictionaries.
+    Classifiers map predicate names to callables on tuples of H-data mappings.
     They can consult metadata or threshold a perceptual model's scores. These are
     categorical decisions, not probabilistic TTR judgements.
     """
@@ -328,8 +329,8 @@ class CLEVRModel:
             def accepts(evidence):
                 if not isinstance(evidence, tuple) or len(evidence) != len(expected):
                     return False
-                if not all(isinstance(obj, dict) and obj.get("id") == obj_id
-                           and obj == self.scene.get(obj_id)
+                if not all(isinstance(obj, Mapping) and obj.get("id") == obj_id
+                           and obj is self.scene.get(obj_id)
                            for obj, obj_id in zip(evidence, expected)):
                     return False
                 return bool(self.classifiers[name](evidence))

@@ -111,6 +111,8 @@
         packages =  (packages pkgs);
         shellHook = ''
           export QUARTO_PYTHON=$(which python3)
+          export PYTHONPATH="$PWD/src:$PWD/../pyttr2/src:$PYTHONPATH"
+          export TORCH_HOME="$PWD/artifacts/torch-cache"
           export CUDA_PATH=${pkgs.cudatoolkit}
           export EXTRA_LDFLAGS="-L/lib -L${pkgs.linuxPackages.nvidia_x11}/lib"
           export LD_LIBRARY_PATH="${pkgs.linuxPackages.nvidia_x11}/lib:${pkgs.cudatoolkit}/lib"

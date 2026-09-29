@@ -1,5 +1,6 @@
 """A small, dependency-free web interface for the CLEVR ground-truth demo."""
 
+from collections.abc import Mapping
 from html import escape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import mimetypes
@@ -10,6 +11,20 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 from pyttr.categorical import Rec, to_latex
 
 from .clevr import AmbiguousReference, CLEVR, CLEVRModel, UnsupportedProgram, clevr_to_h_scene
+
+
+class HDataReference:
+    """A compact, display-only reference to an H-data item."""
+
+    def __init__(self, representation, object_id):
+        self.representation = representation
+        self.object_id = object_id
+
+    def show(self):
+        return f"#{self.representation}({self.object_id})"
+
+    def to_latex(self, vars):
+        return rf"\#\mathrm{{{self.representation}}}(\text{{{self.object_id}}})"
 
 
 class CLEVRWebDemo:
@@ -78,7 +93,7 @@ class CLEVRWebDemo:
             result["error"] = str(exc)
             return result
         result["answer"] = answer
-        result["take_latex"] = to_latex(self._compact_take(model, question_record, take), vars=[])
+        result["take_latex"] = to_latex(self._display_take(question_record, take), vars=[])
         if "intrp" in question_record:
             answer_predicate = question_record["clfr"].appc(take)
             answer_type = question_record["intrp"].appc(take).appc(answer_predicate)
@@ -91,21 +106,38 @@ class CLEVRWebDemo:
         return result
 
     @staticmethod
-    def _compact_take(model, question_record, take):
-        """Retain individual assignments and omit repetitive evidence payloads."""
+    def _display_take(question_record, take, representation="json"):
+        """Project to relevant fields and abbreviate each H-data payload."""
         if "branches" in question_record:
             labels = list(dict.fromkeys(
                 label
                 for branch in question_record["branches"]
-                for label in model.individual_labels(branch["background"])
+                for label in branch["background"].comps
             ))
         else:
-            labels = model.individual_labels(question_record["bg"])
+            labels = list(question_record["bg"].comps)
 
-        def compact(record):
-            return Rec({label: record[label] for label in labels if label in record})
+        def abbreviate(value):
+            if isinstance(value, tuple):
+                return tuple(
+                    HDataReference(representation, item["id"])
+                    if isinstance(item, (Mapping, Rec)) and item.get("id") is not None
+                    else item
+                    for item in value
+                )
+            return value
 
-        return [compact(record) for record in take] if isinstance(take, list) else compact(take)
+        def display_record(record):
+            return Rec({
+                label: abbreviate(record[label])
+                for label in labels
+                if label in record
+            })
+
+        return (
+            [display_record(record) for record in take]
+            if isinstance(take, list) else display_record(take)
+        )
 
     def image_path(self, scene_index):
         scene = self.dataset.scenes[scene_index]
@@ -156,6 +188,9 @@ class CLEVRWebDemo:
             )
             answer_panel = (
                 f'<div class="math scroll">\\[{escape(result["take_latex"])}\\]</div>'
+                '<p class="notation-note"><code>#json(id)</code> abbreviates the '
+                'corresponding CLEVR scene-graph H-data item; angle brackets denote '
+                'evidence tuples.</p>'
                 f'{answer_semantics}'
                 '<div class="answer-row">'
                 f'<span><small>Answer</small>{escape(str(result["answer"]))}</span>'

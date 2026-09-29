@@ -61,7 +61,10 @@ class WebDemoTests(unittest.TestCase):
     def test_answer_page_contains_take_and_answers(self):
         page = self.demo.render(scene_index=0, question_index=17, answer_requested=True)
         self.assertIn(r"\text{x}_{\text{1}} &amp;=&amp; \text{0-}_{\text{1}}", page)
-        self.assertNotIn(r"\text{x1_x0}_{\text{right}} &amp;=&amp;", page)
+        self.assertIn(r"\text{x1_x0}_{\text{right}} &amp;=&amp;", page)
+        self.assertIn(r"\#\mathrm{json}(\text{0-1})", page)
+        self.assertIn("#json(id)</code> abbreviates", page)
+        self.assertNotIn(r"\text{material} &amp;=&amp;", page)
         self.assertIn("Answer composition", page)
         self.assertIn(r"\text{blue}(\text{0-}_{\text{1}})", page)
         self.assertIn("<small>Answer</small>blue", page)

@@ -1,6 +1,6 @@
 # WP1 boundaries and next experiments
 
-The initial non-VSA pipeline is:
+The ground-truth and first neural-feature pipelines are:
 
 ```text
 image -> detector -> crops -> attribute distributions
@@ -8,6 +8,10 @@ image -> detector -> crops -> attribute distributions
                       external Boolean witness conditions
                                   |
 controlled description -> dependent record type -> witness search -> match
+
+image + oracle boxes -> Faster R-CNN box-head vectors -> attribute heads
+                              |                           |
+                         vector H-data       lazy Boolean witness conditions
 ```
 
 `spinls.clevr.CLEVRModel` uses `pyttr.categorical` and one fresh `Possibility`
@@ -78,21 +82,52 @@ or objectness model plus attribute heads is therefore a future integration.
 preventing implicit downloads. Random-weight output is not perceptual evidence
 of CLEVR attributes; the architecture smoke supplies an empty attribute map.
 
+The first vector-H-data milestone bypasses proposals and predictions.
+`FasterRCNNFeatureExtractor` accepts externally supplied `OracleRegion` boxes
+and runs them through the Faster R-CNN transform, backbone, RoI pool, and box
+head. Each resulting `FeatureObject` stores a flat immutable tuple of reals.
+`model_from_feature_objects` retains these vectors in the H-scene and calls an
+injected feature classifier only when witness search requests an attribute;
+the resulting distributions are cached once per object. This keeps the H-data
+distinct from the categorical threshold decision.
+
+`build_factorized_attribute_heads` constructs one Torch linear head for each
+CLEVR attribute family, and `TorchAttributeClassifier` converts trained head
+logits to distributions. `vision_training.py` defines the versioned tensor
+cache, compatibility validation, factorized cross-entropy training, per-family
+evaluation, best-checkpoint saving, and checkpoint loading. The repository
+still needs mask-tight boxes for any later localization experiment; the current
+experiment deliberately isolates attribute learning from localization.
+
+`scene_object_to_box` supplies the initial no-render approximation from CLEVR's
+pixel coordinates, 3D coordinates, camera-right direction, and shape-specific
+projection constants. Its docstring retains an immutable link to the upstream
+Apache-2.0 implementation. The port fixes the source's sequential coordinate
+overwrite, scales to the loaded image size, and clips boxes to image bounds.
+`examples/clevr_boxes.py` overlays IDs and ground-truth attributes for manual
+quality checks. These regions are suitable as pseudo-oracle inputs for the
+first attribute experiment, not yet as box-regression targets.
+
 The perceptual stub deliberately supplies no spatial relations: ordering
 2D bounding-box centers would not reproduce CLEVR's camera-relative 3D
 relations. The ground-truth baseline retains the dataset relations.
 
 ## Next work
 
-1. Choose the CLEVR detection/attribute training target and annotation source;
-   implement a crop classifier behind the existing callback interface.
-2. Add a controlled description parser and compositional modifier examples
+1. Run the resumable train/validation feature export and head training on the
+   CUDA server, recording the cache manifests and validation metrics.
+2. Calibrate per-family categorical thresholds from validation probabilities.
+3. Connect the trained vector backend to attribute-only web questions and display its
+   evidence as `#vector(object-id)`.
+4. Replace oracle regions with learned proposals only after the attribute path
+   has been validated independently.
+5. Add a controlled description parser and compositional modifier examples
    that need `Fun`, beyond attribute conjunctions.
-3. Specify action-rule inputs, licensed outputs, and agent state transitions;
+6. Specify action-rule inputs, licensed outputs, and agent state transitions;
    use these experiments to drive additions in `../pyttr2`.
-4. Decide how classifier uncertainty should enter probabilistic TTR, rather
+7. Decide how classifier uncertainty should enter probabilistic TTR, rather
    than reusing categorical threshold decisions as probabilities.
-5. Extend the CLEVR functional-program fragment only with corresponding
+8. Extend the CLEVR functional-program fragment only with corresponding
    semantics and dataset regressions (set intersection, integer comparisons).
 
 The sibling PyTTR repository was inspected but not modified in this refactor.

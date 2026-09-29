@@ -2,7 +2,7 @@ PYTHON ?= python
 PYTTR_SRC ?= $(abspath ../pyttr2/src)
 export PYTHONPATH := $(abspath src):$(PYTTR_SRC)$(if $(PYTHONPATH),:$(PYTHONPATH))
 
-.PHONY: check demo web-demo vision-demo notebook paths
+.PHONY: check demo web-demo vision-demo gpu-pipeline notebook paths
 check:
 	$(PYTHON) -m unittest discover -s tests -v
 
@@ -14,6 +14,9 @@ web-demo:
 
 vision-demo:
 	$(PYTHON) examples/clevr_perception.py
+
+gpu-pipeline:
+	bash scripts/gpu_clevr_pipeline.sh
 
 notebook:
 	$(PYTHON) -m jupyterlab notebooks
