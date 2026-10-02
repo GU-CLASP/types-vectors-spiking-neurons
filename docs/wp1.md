@@ -105,8 +105,18 @@ projection constants. Its docstring retains an immutable link to the upstream
 Apache-2.0 implementation. The port fixes the source's sequential coordinate
 overwrite, scales to the loaded image size, and clips boxes to image bounds.
 `examples/clevr_boxes.py` overlays IDs and ground-truth attributes for manual
-quality checks. These regions are suitable as pseudo-oracle inputs for the
-first attribute experiment, not yet as box-regression targets.
+quality checks. These regions supply both pseudo-oracle inputs for the first
+attribute experiment and noisy localization targets for the first detector
+experiment. Detector evaluation against them measures recovery of the
+projection heuristic, not mask-tight localization.
+
+`detection_training.py` presents the approximate boxes as one foreground class,
+builds a COCO-initialized Faster R-CNN ResNet50-FPN with a two-logit
+background/entity predictor, evaluates greedy one-to-one matches, and loads
+tensor-only detector checkpoints. `examples/train_clevr_detector.py` trains at
+native CLEVR resolution and atomically saves both the best validation-F1 model
+and a resumable last-epoch checkpoint. At inference the model receives only the
+image; accepted detections will introduce scene-local individuals.
 
 The perceptual stub deliberately supplies no spatial relations: ordering
 2D bounding-box centers would not reproduce CLEVR's camera-relative 3D
@@ -114,20 +124,22 @@ relations. The ground-truth baseline retains the dataset relations.
 
 ## Next work
 
-1. Run the resumable train/validation feature export and head training on the
-   CUDA server, recording the cache manifests and validation metrics.
-2. Calibrate per-family categorical thresholds from validation probabilities.
-3. Connect the trained vector backend to attribute-only web questions and display its
-   evidence as `#vector(object-id)`.
-4. Replace oracle regions with learned proposals only after the attribute path
-   has been validated independently.
-5. Add a controlled description parser and compositional modifier examples
+1. Train and evaluate the single-class detector on the CUDA server, then copy
+   its best and last-epoch checkpoints back into `artifacts/clevr-detector/`.
+2. Cache detected ROI features plus global FPN scene features, matching train
+   and validation detections to annotated objects only to construct labels.
+3. Train right/front ordered-pair relation classifiers and derive left/behind
+   through argument reversal; all CLEVR ordered pairs can be used initially.
+4. Retrain the categorical attribute heads on detected rather than oracle ROIs.
+5. Connect ground-truth and visual backends to the web demo side by side,
+   displaying visual evidence as `#vector(object-id)`.
+6. Add a controlled description parser and compositional modifier examples
    that need `Fun`, beyond attribute conjunctions.
-6. Specify action-rule inputs, licensed outputs, and agent state transitions;
+7. Specify action-rule inputs, licensed outputs, and agent state transitions;
    use these experiments to drive additions in `../pyttr2`.
-7. Decide how classifier uncertainty should enter probabilistic TTR, rather
+8. Decide how classifier uncertainty should enter probabilistic TTR, rather
    than reusing categorical threshold decisions as probabilities.
-8. Extend the CLEVR functional-program fragment only with corresponding
+9. Extend the CLEVR functional-program fragment only with corresponding
    semantics and dataset regressions (set intersection, integer comparisons).
 
 The sibling PyTTR repository was inspected but not modified in this refactor.

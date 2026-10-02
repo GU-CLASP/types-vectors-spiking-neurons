@@ -189,6 +189,58 @@ For a short server benchmark before the full export, invoke the cache CLI with
 the pseudo-oracle pipeline exports train and validation only; test images become
 usable after replacing oracle regions with learned proposals.
 
+## GPU object detector
+
+The next perception milestone fine-tunes COCO-pretrained Faster R-CNN as a
+single-class CLEVR entity detector. Its training targets use the approximate
+scene-derived boxes described above; inference receives only an image. Each
+accepted box can therefore introduce one scene-local individual without using
+the scene object's identity.
+
+On the GPU server, run:
+
+```sh
+nix develop ./.nix#server
+export CLEVR_DIR=/path/to/CLEVR_v1.0
+make gpu-detector
+```
+
+The launcher trains at CLEVR's native 320x480 resolution and writes the best
+validation-F1 checkpoint to `artifacts/clevr-detector/detector.pt`. It also
+writes `detector.last.pt` after every epoch and resumes from that file. Adjust
+`DETECTOR_BATCH_SIZE`, `DETECTOR_WORKERS`, or `DETECTOR_EPOCHS` for the server.
+The reported precision, recall, F1, matched IoU, and object-count error compare
+predictions with the same approximate boxes used for supervision. They measure
+recovery of those pseudo-boxes rather than mask-tight localization quality.
+
+For a short end-to-end benchmark, run `examples/train_clevr_detector.py`
+directly with `--limit-train-scenes 1000 --limit-val-scenes 250`. After training,
+`examples/evaluate_clevr_detector.py` can test other score and IoU thresholds
+without modifying the checkpoint. `examples/render_clevr_detections.py` renders
+the resulting scene-local IDs and boxes from image input alone, including on the
+unannotated test split.
+
+TODO: Investigate the color-head accuracy gap (84.79% train, 84.71% validation
+after ten epochs). The preliminary analysis found balanced color classes but a
+strong association with region overlap: validation accuracy was 95.12% for
+boxes with maximum pairwise IoU below 0.01, 69.99% at IoU 0.10--0.25, and
+57.92% at IoU 0.25 or above. Accuracy was 70.88% when another object's center
+fell inside the region, compared with 86.80% otherwise. Metallic cubes were
+the hardest shape/material combination (75.11%), and purple was the hardest
+color (77.41%), most often confused with blue. Extending only the linear color
+head through epoch 15 raised validation accuracy modestly to 85.78%, suggesting
+that early stopping is not the main limitation. Compare center-shrunk
+pseudo-oracle boxes, a small nonlinear color head, and appended low-level
+RGB/HSV features before repeating the complete export.
+
+TODO: After validating the detector, cache detected ROI features and global FPN
+scene features for relation learning. CLEVR train contains 2,878,906 ordered
+non-self object pairs; each of left, right, front, and behind is exactly 50%
+positive, so the initial relation experiment can use every pair without
+negative subsampling. Train shared ordered-pair features with canonical right
+and front classifiers, deriving left and behind by swapping the arguments so
+inverse relations remain consistent.
+
 ## HD-Glue notebook
 
 `notebooks/ttr-hdc-glue_cifar10.ipynb` retains the dense-feature/VSA experiment,
