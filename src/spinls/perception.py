@@ -189,6 +189,35 @@ class FasterRCNNFeatureExtractor:
     def extract(self, image, regions):
         return self.extract_batch([image], [regions])[0]
 
+    def extract_scene_features(self, image):
+        return self.extract_scene_features_batch([image])[0]
+
+    def extract_scene_features_batch(self, images):
+        """Average-pool FPN feature maps into one global scene vector per image."""
+        import torch
+        from torch.nn import functional as F
+
+        images = list(images)
+        if not images:
+            raise ValueError("Expected at least one image")
+        for image in images:
+            if image.ndim != 3 or image.shape[0] != 3 or not image.is_floating_point():
+                raise ValueError("Expected a float RGB image tensor [3,H,W] in [0,1]")
+            if not torch.isfinite(image).all() or image.min() < 0 or image.max() > 1:
+                raise ValueError("Expected finite image values in [0,1]")
+        images = [image.to(self.device) for image in images]
+        with torch.inference_mode():
+            image_list, _ = self.model.transform(images)
+            feature_maps = self.model.backbone(image_list.tensors)
+            if torch.is_tensor(feature_maps):
+                feature_maps = {"0": feature_maps}
+            pooled_maps = [
+                F.adaptive_avg_pool2d(features, (1, 1)).flatten(1)
+                for features in feature_maps.values()
+            ]
+            vectors = torch.cat(pooled_maps, dim=1).detach().cpu()
+        return [tuple(float(value) for value in vector) for vector in vectors]
+
     def extract_batch(self, images, region_batches):
         """Extract features for a batch while preserving scene/object order."""
         import torch
@@ -343,13 +372,16 @@ def build_untrained_faster_rcnn(*, num_classes=2, **kwargs):
 
 
 def model_from_feature_objects(
-    objects, attribute_classifier, *, attribute_threshold=0.5, detection_threshold=0.5
+    objects, attribute_classifier, *, attribute_threshold=0.5, detection_threshold=0.5,
+    classification_mode="threshold",
 ):
     """Build a categorical model whose classifiers consume cached vectors lazily."""
     if not callable(attribute_classifier):
         raise TypeError("attribute_classifier must be callable")
     if not 0 <= attribute_threshold <= 1 or not 0 <= detection_threshold <= 1:
         raise ValueError("Thresholds must be in [0, 1]")
+    if classification_mode not in ("threshold", "argmax"):
+        raise ValueError("classification_mode must be 'threshold' or 'argmax'")
     scene = {}
     for obj in objects:
         if obj.object_id in scene:
@@ -377,6 +409,8 @@ def model_from_feature_objects(
 
     def classified(evidence, attr, value):
         distribution = distributions(evidence[0]).get(attr, {})
+        if classification_mode == "argmax":
+            return bool(distribution) and max(distribution, key=distribution.get) == value
         return value in distribution and distribution[value] > attribute_threshold
 
     classifiers = {

@@ -91,6 +91,20 @@ class PerceptionTests(unittest.TestCase):
         self.assertEqual(calls, [(1.0, 0.0), (0.0, 1.0)])
         self.assertEqual(model.scene["a"]["features"], (1.0, 0.0))
 
+    def test_categorical_feature_classifiers_use_one_argmax_label(self):
+        objects = [FeatureObject("a", (0, 0, 10, 10), 1.0, (1.0,))]
+
+        def attributes(features):
+            return {"color": {"red": 0.40, "blue": 0.35, "green": 0.25}}
+
+        model = model_from_feature_objects(
+            objects, attributes, classification_mode="argmax"
+        )
+        self.assertTrue(model.matches(color="red"))
+        self.assertFalse(model.matches(color="blue"))
+        with self.assertRaisesRegex(ValueError, "classification_mode"):
+            model_from_feature_objects(objects, attributes, classification_mode="binary")
+
     def test_factorized_torch_heads_supply_distributions(self):
         try:
             import torch
@@ -115,7 +129,7 @@ class PerceptionTests(unittest.TestCase):
             self.skipTest("Optional torch dependency not installed")
 
         class Transform:
-            def __call__(self, images, targets):
+            def __call__(self, images, targets=None):
                 image_list = type("ImageList", (), {
                     "tensors": torch.stack(images),
                     "image_sizes": [tuple(images[0].shape[-2:])],
@@ -153,9 +167,11 @@ class PerceptionTests(unittest.TestCase):
             OracleRegion("image-1", (10, 3, 18, 12)),
         ]
         objects = extractor.extract(torch.zeros(3, 20, 20), regions)
+        scene_features = extractor.extract_scene_features(torch.ones(3, 20, 20))
 
         self.assertEqual([obj.object_id for obj in objects], ["image-0", "image-1"])
         self.assertEqual(objects[0].features, (1.0, 2.0, 8.0, 9.0))
+        self.assertEqual(scene_features, (1.0, 1.0, 1.0))
         batches = extractor.extract_batch(
             [torch.zeros(3, 20, 20), torch.zeros(3, 20, 20)],
             [[regions[0]], [regions[1]]],

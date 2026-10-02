@@ -2,7 +2,7 @@ PYTHON ?= python
 PYTTR_SRC ?= $(abspath ../pyttr2/src)
 export PYTHONPATH := $(abspath src):$(PYTTR_SRC)$(if $(PYTHONPATH),:$(PYTHONPATH))
 
-.PHONY: check demo web-demo vision-demo gpu-pipeline gpu-detector notebook paths
+.PHONY: check demo web-demo vision-demo gpu-pipeline gpu-detector gpu-relations notebook paths
 check:
 	$(PYTHON) -m unittest discover -s tests -v
 
@@ -20,6 +20,9 @@ gpu-pipeline:
 
 gpu-detector:
 	bash scripts/gpu_clevr_detector.sh
+
+gpu-relations:
+	bash scripts/gpu_clevr_relations.sh
 
 notebook:
 	$(PYTHON) -m jupyterlab notebooks

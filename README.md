@@ -83,20 +83,31 @@ comparisons, or a list of all matching records for `count` and `exist` (includin
 an empty list for zero matches). Count comparisons also return their branch
 witness records. Answers remain strings, including counts.
 
-For a minimal browser interface over the same ground-truth model, run:
+For a browser interface comparing the ground-truth and learned-perception
+models, run:
 
 ```sh
 make web-demo
 ```
 
-Then open `http://127.0.0.1:8000`. The page shows a random CLEVR scene,
-optional ground-truth object-ID overlays, its associated questions, the
-compiled TTR question, and—on request—the answer and situation take. The take
-includes the fields required by the question while abbreviating raw scene-graph
-evidence as `#json(object-id)`; classifiers still receive the complete H-data
-objects. Enter a CLEVR image index in the header to open a specific scene. Use
-`python examples/clevr_web.py --help` to select another dataset split, host,
-or port. LaTeX is rendered by MathJax loaded from its public CDN.
+Then open `http://127.0.0.1:8000`. Tabs retain the same scene and question while
+switching between CLEVR scene-graph H-data and image-only model predictions.
+The ground-truth take abbreviates complete scene-graph objects as
+`#json(object-id)`; the model take abbreviates 1024-dimensional ROI vectors as
+`#vector(object-id)`. In model mode, the image displays predicted boxes,
+detection scores, and each categorical attribute head's top label and
+confidence so perception errors remain inspectable. Learned relations are not
+yet available: relation-dependent questions are disabled explicitly rather
+than silently consulting ground truth.
+
+The default model paths are `artifacts/clevr-detector/detector.pt` and
+`artifacts/clevr-resnet50-fpn/heads.pt`. The model tab remains available with a
+missing-checkpoint notice until both are installed. Use the `(?)` link for the
+formalization, implementation map, model design, current checkpoint metrics,
+and references. Enter a CLEVR image index in the header to open a specific
+scene. `python examples/clevr_web.py --help` exposes checkpoint, device,
+detection-threshold, dataset-split, host, port, and local-paper options. LaTeX
+is rendered by MathJax loaded from its public CDN.
 
 For terminal `query_*` questions, the representation separates `clfr`, which
 returns an elliptical attribute predicate, from `intrp`, which applies that
@@ -240,6 +251,24 @@ positive, so the initial relation experiment can use every pair without
 negative subsampling. Train shared ordered-pair features with canonical right
 and front classifiers, deriving left and behind by swapping the arguments so
 inverse relations remain consistent.
+
+The initial relation-head trainer is wired as a separate GPU stage. It reuses
+the cached pseudo-oracle ROI vectors, extracts one global COCO ResNet50-FPN
+scene vector per image, and writes ordered-pair features of the form
+`target_roi ⧺ reference_roi ⧺ scene`. The heads are binary softmax classifiers
+for canonical `right(target, reference)` and `front(target, reference)` labels;
+`left` and `behind` should be derived at inference by swapping the ordered
+arguments. To train:
+
+```sh
+nix develop ./.nix#server
+export CLEVR_DIR=/path/to/CLEVR_v1.0
+make gpu-relations
+```
+
+This expects `artifacts/clevr-resnet50-fpn/features/{train,val}` to already
+exist from `make gpu-pipeline` and writes `relations.pt` under the same
+artifact directory.
 
 ## HD-Glue notebook
 
